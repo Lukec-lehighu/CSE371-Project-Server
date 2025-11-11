@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from database import getGroups
 
 DEVRUN = True # whether or not I'm running the script for development or testing
 
@@ -6,7 +7,10 @@ app = Flask(__name__)
 
 @app.route('/groups', methods=['GET'])
 def get_groups():
-    return jsonify({'test': 'hi'})
+    groups = getGroups()
+    if groups is None:
+        groups = []
+    return jsonify(groups)
 
 if __name__=='__main__':
     if DEVRUN:
