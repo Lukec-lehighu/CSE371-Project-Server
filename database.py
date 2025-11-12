@@ -37,16 +37,10 @@ def setupTables():
 def getGroups(username):
     # get all of the groups that the user has access to 
     cur = sqlite3.connect(DB_NAME).cursor()
-    pubRes = cur.execute("SELECT groupname FROM groups WHERE public=1").fetchall()
-    privRes = cur.execute(f"SELECT groupname FROM group_members WHERE membername='{username}'").fetchall()
+    groups = cur.execute("SELECT groupname FROM groups").fetchall()
+    joined = cur.execute(f"SELECT groupname FROM group_members WHERE membername='{username}'").fetchall()
 
-    if pubRes is None:
-        pubRes = []
-    if privRes is None:
-        privRes = []
-
-    pubRes.extend(privRes)
-    res = list(set(pubRes)) # get rid of duplicates
+    res = [[group, group in joined] for group in groups]
     return res
 
 def newGroup(groupname, ownername, public):
