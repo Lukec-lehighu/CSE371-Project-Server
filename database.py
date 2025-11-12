@@ -64,5 +64,30 @@ def newGroup(groupname, ownername, public):
     except Exception as e:
         print(e)
         return False
+    
+def joinGroup(groupname, username):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    # check to make sure the username has permission to join or is already joined
+    isPublic = cur.execute(f"SELECT public FROM groups WHERE groupname='{groupname}'").fetchone()
+    if not isPublic[0]:
+        return False
+
+    already_joined = cur.execute(f"SELECT * FROM group_members WHERE groupname='{groupname}' AND membername='{username}'").fetchall()
+    if len(already_joined) != 0:
+        return True # return true as a safeguard from duplicate joins
+
+    # user has permission and isn't already joined, add them to the database
+    try:
+        # execute join command and commit changes
+        cur.execute("INSERT INTO group_members (groupname, membername) VALUES" \
+                        f"('{groupname}', '{username}')")
+        con.commit()
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
 
 setupTables()

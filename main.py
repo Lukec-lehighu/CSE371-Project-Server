@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from database import getGroups, newGroup
+from database import getGroups, newGroup, joinGroup
 
 import requests
 import json
@@ -57,6 +57,29 @@ def make_group():
                 resp['ok'] = 'Group created'
             else:
                 resp['error'] = f'Group name "{name}" already exists in database!'
+    else:
+        resp['error'] = 'INVALID REQUEST'
+
+    return jsonify(resp)
+
+@app.route('/join_group', methods=['POST'])
+def join_group():
+    resp = {}
+
+    body = request.json
+    if body:
+        groupname = body.get('group', '')
+        username = check_auth(body.get('token'))
+
+        if len(username) == 0:
+            resp['error'] = 'Not signed in! Please refresh the page'
+        elif len(groupname) == 0:
+            resp['error'] = 'Invalid group name!'
+        else:
+            if joinGroup(groupname=groupname, username=username):
+                resp['ok'] = 'Joined group'
+            else:
+                resp['error'] = 'Unable to join group'
     else:
         resp['error'] = 'INVALID REQUEST'
 
