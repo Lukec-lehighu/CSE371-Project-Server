@@ -10,7 +10,8 @@ def setupTables():
     if res.fetchone() is None:
         cur.execute(f"""CREATE TABLE groups(
                         groupname varchar({MAX_GROUPNAME_LEN}) PRIMARY KEY,
-                        owner varchar({MAX_GROUPNAME_LEN})
+                        owner varchar({MAX_GROUPNAME_LEN}),
+                        public int
                     )
                     """)
         print('Created table: groups')
@@ -22,10 +23,10 @@ def setupTables():
 
 def getGroups():
     cur = sqlite3.connect(DB_NAME).cursor()
-    res = cur.execute("SELECT * FROM groups")
+    res = cur.execute("SELECT * FROM groups WHERE public=1")
     return res.fetchall()
 
-def newGroup(groupname, ownername):
+def newGroup(groupname, ownername, public):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
     # Trim names if necessary
@@ -35,13 +36,13 @@ def newGroup(groupname, ownername):
         ownername = ownername[0:MAX_OWNERNAME_LEN]
 
     # TODO: have more checks to avoid SQL code injections and such
-
     try:
-        cur.execute("INSERT INTO groups (groupname, owner) VALUES" \
-                    f"('{groupname}', '{ownername}')")
+        cur.execute("INSERT INTO groups (groupname, owner, public) VALUES" \
+                    f"('{groupname}', '{ownername}', {1 if public else 0})")
         con.commit()
         return True
-    except:
+    except Exception as e:
+        print(e)
         return False
 
 setupTables()
