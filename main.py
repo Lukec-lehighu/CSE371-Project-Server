@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from database import getGroups, newGroup, joinGroup
+from database import getGroups, newGroup, joinGroup, getMembers
 
 import requests
 import json
@@ -84,6 +84,21 @@ def join_group():
         resp['error'] = 'INVALID REQUEST'
 
     return jsonify(resp)
+
+@app.route('/members')
+def get_members():
+    resp = {}
+    try:
+        groupname = request.args.get('groupname')
+        owner, members = getMembers(groupname=groupname)
+        resp['ok'] = {
+            'owner': owner,
+            'members': members
+        }
+    except:
+        resp['error'] = 'Error getting group information (invalid URI params)'  
+    return jsonify(resp)
+    
 
 if __name__=='__main__':
     if DEVRUN:

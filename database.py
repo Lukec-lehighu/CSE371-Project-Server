@@ -89,5 +89,16 @@ def joinGroup(groupname, username):
         print(e)
         return False
 
+def getMembers(groupname):
+    cur = sqlite3.connect(DB_NAME).cursor()
+
+    # make sure group exists
+    group = cur.execute(f"SELECT owner FROM groups WHERE groupname='{groupname}'").fetchone()
+    if len(group) == 0:
+        return 'DNE', []
+    
+    owner = group[0]
+    members = cur.execute(f"SELECT membername FROM group_members WHERE groupname='{groupname}'").fetchall()
+    return owner, members
 
 setupTables()
