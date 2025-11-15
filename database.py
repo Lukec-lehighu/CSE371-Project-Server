@@ -1,6 +1,7 @@
 import sqlite3
 
 DB_NAME = 'groceries.db'
+
 MAX_GROUPNAME_LEN = 50
 MAX_USERNAME_LEN = 50
 MAX_RECEIPT_ITEM_LEN = 100
@@ -77,6 +78,15 @@ def getGroups(username):
     res = [[group, group in joined] for group in groups]
     return res
 
+def userInGroup(groupname, member, cur=None):
+    if not cur:
+        cur = sqlite3.connect(DB_NAME).cursor()
+
+    already_joined = cur.execute(f"SELECT * FROM group_members WHERE groupname='{groupname}' AND membername='{member}'").fetchall()
+    if len(already_joined) != 0:
+        return True
+    return False
+
 def newGroup(groupname, ownername, public):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
@@ -108,8 +118,7 @@ def joinGroup(groupname, username):
     if not isPublic[0]:
         return False
 
-    already_joined = cur.execute(f"SELECT * FROM group_members WHERE groupname='{groupname}' AND membername='{username}'").fetchall()
-    if len(already_joined) != 0:
+    if userInGroup(groupname=groupname, member=username, cur=cur):
         return True # return true as a safeguard from duplicate joins
 
     # user has permission and isn't already joined, add them to the database
@@ -154,5 +163,17 @@ def newReceipt(groupname, name, author):
     except Exception as e:
         print(e)
         return False
+    
+def getRequests(groupname):
+    cur = sqlite3.connect(DB_NAME).cursor()
+
+    # TODO: if the member isn't in the group, don't let them see information (not necessary, but good practice :3)
+    #if not userInGroup(groupname=groupname, member=)
+
+    requests = cur.execute(f"SELECT requester, request FROM requests WHERE groupname='{groupname}'").fetchall()
+    return requests
+
+def newRequest(groupname, displayname, request):
+    cur = sqlite3.connect(DB_NAME).cursor()
 
 setupTables()
