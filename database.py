@@ -3,6 +3,8 @@ import sqlite3
 DB_NAME = 'groceries.db'
 MAX_GROUPNAME_LEN = 50
 MAX_USERNAME_LEN = 50
+MAX_RECEIPT_ITEM_LEN = 100
+MAX_REQUEST_LEN = 200
 
 def _table_exists(name, cur):
     res = cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{name}'")
@@ -10,6 +12,8 @@ def _table_exists(name, cur):
 
 def setupTables():
     cur = sqlite3.connect(DB_NAME).cursor()
+
+    # make sure each table exists and if not, create it
     if not _table_exists('groups', cur):
         cur.execute(f"""CREATE TABLE groups(
                         groupname varchar({MAX_GROUPNAME_LEN}) PRIMARY KEY,
@@ -33,6 +37,36 @@ def setupTables():
                         membername varchar({MAX_USERNAME_LEN})
                     )""")
         print('Created table: group_members')
+
+    if not _table_exists('receipts', cur):
+        cur.execute(f"""CREATE TABLE receipts(
+                        name varchar({MAX_GROUPNAME_LEN}),
+                        groupname varchar({MAX_GROUPNAME_LEN}),
+                        author varchar({MAX_USERNAME_LEN})
+                        )""")
+        print('Created table: receipts')
+
+    if not _table_exists('receipt_data', cur):
+        cur.execute(f"""CREATE TABLE receipt_data(
+                        rID int,
+                        itemname varchar({MAX_RECEIPT_ITEM_LEN}),
+                        cost REAL
+                        )""")
+        print('Created table: receipt_data')
+
+    if not _table_exists('claimed_items', cur):
+        cur.execute(f"""CREATE TABLE claimed_items(
+                        rID int,
+                        itemname varchar({MAX_RECEIPT_ITEM_LEN}),
+                        claimer varchar({MAX_USERNAME_LEN})
+                        )""")
+        
+    if not _table_exists('requests', cur):
+        cur.execute(f"""CREATE TABLE requests(
+                        groupname varchar({MAX_GROUPNAME_LEN}),
+                        requester varchar({MAX_USERNAME_LEN}),
+                        request varchar({MAX_REQUEST_LEN})
+                        )""")
 
 def getGroups(username):
     # get all of the groups that the user has access to 
@@ -99,6 +133,26 @@ def getMembers(groupname):
     
     owner = group[0]
     members = cur.execute(f"SELECT membername FROM group_members WHERE groupname='{groupname}'").fetchall()
+    members.remove(owner) # no need to list the owner as a member since they literally own the group lol
     return owner, members
+
+def getReceipts(groupname):
+    cur = sqlite3.connect(DB_NAME).cursor()
+
+    receipts = cur.execute(f"SELECT * FROM receipts WHERE groupname='{groupname}'").fetchall()
+    return receipts
+
+def newReceipt(groupname, name, author):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    try:
+        cur.execute(f"INSERT INTO receipts (name, groupname, author) VALUES('{name}', '{groupname}', '{author}')")
+        con.commit()
+
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
 setupTables()
