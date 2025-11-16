@@ -28,7 +28,8 @@ def setupTables():
     if not _table_exists('group_members', cur):
         cur.execute(f"""CREATE TABLE group_members(
                         groupname varchar({MAX_GROUPNAME_LEN}),
-                        membername varchar({MAX_USERNAME_LEN})
+                        membername varchar({MAX_USERNAME_LEN}),
+                        FOREIGN KEY (groupname) REFERENCES groups(groupname)
                     )""")
         print('Created table: group_members')
 
@@ -36,7 +37,8 @@ def setupTables():
         cur.execute(f"""CREATE TABLE receipts(
                         name varchar({MAX_GROUPNAME_LEN}),
                         groupname varchar({MAX_GROUPNAME_LEN}),
-                        author varchar({MAX_USERNAME_LEN})
+                        author varchar({MAX_USERNAME_LEN}),
+                        FOREIGN KEY (groupname) REFERENCES groups(groupname)
                         )""")
         print('Created table: receipts')
 
@@ -44,7 +46,8 @@ def setupTables():
         cur.execute(f"""CREATE TABLE receipt_data(
                         rID int,
                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
-                        cost REAL
+                        cost REAL,
+                        FOREIGN KEY (rID) REFERENCES receipts(rowid)
                         )""")
         print('Created table: receipt_data')
 
@@ -52,15 +55,20 @@ def setupTables():
         cur.execute(f"""CREATE TABLE claimed_items(
                         rID int,
                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
-                        claimer varchar({MAX_USERNAME_LEN})
+                        claimer varchar({MAX_USERNAME_LEN}),
+                        FOREIGN KEY (rID) REFERENCES receipts(rowid)
                         )""")
+        print('Created table: claimed_items')
         
     if not _table_exists('requests', cur):
         cur.execute(f"""CREATE TABLE requests(
                         groupname varchar({MAX_GROUPNAME_LEN}),
                         requester varchar({MAX_USERNAME_LEN}),
-                        request varchar({MAX_REQUEST_LEN})
+                        request varchar({MAX_REQUEST_LEN}),
+                        FOREIGN KEY (groupname) REFERENCES groups(groupname)
                         )""")
+        print('Created table: requests')
+    
     con.close()
 
 def getGroups(username):
@@ -197,6 +205,10 @@ def newReceipt(groupname, name, author):
         print(e)
         con.close()
         return False
+    
+def removeReceipt(groupname, name):
+    # TODO: protect this function to only fire if user is in the group
+    pass
     
 def getRequests(groupname):
     con = sqlite3.connect(DB_NAME)
