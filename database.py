@@ -35,9 +35,11 @@ def setupTables():
 
     if not _table_exists('receipts', cur):
         cur.execute(f"""CREATE TABLE receipts(
+                        rID INTEGER NOT NULL,
                         name varchar({MAX_GROUPNAME_LEN}),
                         groupname varchar({MAX_GROUPNAME_LEN}),
                         author varchar({MAX_USERNAME_LEN}),
+                        PRIMARY KEY(rID),
                         FOREIGN KEY (groupname) REFERENCES groups(groupname) ON DELETE CASCADE
                         )""")
         print('Created table: receipts')
@@ -47,7 +49,7 @@ def setupTables():
                         rID int,
                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
                         cost REAL,
-                        FOREIGN KEY (rID) REFERENCES receipts(rowid) ON DELETE CASCADE
+                        FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
                         )""")
         print('Created table: receipt_data')
 
@@ -56,7 +58,7 @@ def setupTables():
                         rID int,
                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
                         claimer varchar({MAX_USERNAME_LEN}),
-                        FOREIGN KEY (rID) REFERENCES receipts(rowid) ON DELETE CASCADE
+                        FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
                         )""")
         print('Created table: claimed_items')
         
@@ -163,6 +165,7 @@ def deleteGroup(groupname, username):
     cur = con.cursor()
 
     if userIsOwnerOfGroup(groupname, username):
+        cur.execute("PRAGMA foreign_keys = ON") # allow for cascading delete
         cur.execute(f"DELETE FROM groups WHERE groupname='{groupname}'")
         con.commit()
 
@@ -208,9 +211,22 @@ def newReceipt(groupname, name, author):
         con.close()
         return False
     
-def removeReceipt(groupname, name):
+def removeReceipt(rowid:int):
     # TODO: protect this function to only fire if user is in the group
-    pass
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    try:
+        cur.execute("PRAGMA foreign_keys = ON") # allow for cascading delete
+        cur.execute(f"DELETE FROM receipts WHERE rowid={rowid}")
+        con.commit()
+        con.close()
+
+        return True
+    except Exception as e:
+        print(e)
+        con.close()
+        return False
     
 def getRequests(groupname):
     con = sqlite3.connect(DB_NAME)
@@ -244,6 +260,9 @@ def removeRequest(rid: int):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
 
+    # TODO: try-except?
+
+    cur.execute("PRAGMA foreign_keys = ON") # allow for cascading delete
     cur.execute(f"DELETE FROM requests WHERE rowid={rid}")
     con.commit()
 

@@ -27,17 +27,18 @@ def tests():
     runTest(lambda:newReceipt('Testgroup', 'receipt1', 'display name'), "newReceipt")
     runTest(lambda:newReceipt('Testgroup', 'receipt2', 'display name 2'), "newReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
-    runTest(lambda:removeReceipt('Testgroup', 'receipt2'), "removeReceipt")
+    runTest(lambda:removeReceipt(1), "removeReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
+
+    #receipt items
 
     #requests
     runTest(lambda:newRequest('Testgroup', 'Testscript', 'display name', 'I want bread lol'), "newRequest")
     runTest(lambda:getRequests('Testgroup'), "getRequests")
-    runTest(lambda:removeRequest(0), "removeRequest")
+    runTest(lambda:removeRequest(1), "removeRequest")
     runTest(lambda:getRequests('Testgroup'), "getRequests")
 
     #claimed items
-
 
     runTest(lambda:deleteGroup('Testgroup', 'Testscript'), "deleteGroup")
 
