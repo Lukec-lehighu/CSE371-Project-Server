@@ -29,7 +29,7 @@ def setupTables():
         cur.execute(f"""CREATE TABLE group_members(
                         groupname varchar({MAX_GROUPNAME_LEN}),
                         membername varchar({MAX_USERNAME_LEN}),
-                        FOREIGN KEY (groupname) REFERENCES groups(groupname)
+                        FOREIGN KEY (groupname) REFERENCES groups(groupname) ON DELETE CASCADE
                     )""")
         print('Created table: group_members')
 
@@ -38,7 +38,7 @@ def setupTables():
                         name varchar({MAX_GROUPNAME_LEN}),
                         groupname varchar({MAX_GROUPNAME_LEN}),
                         author varchar({MAX_USERNAME_LEN}),
-                        FOREIGN KEY (groupname) REFERENCES groups(groupname)
+                        FOREIGN KEY (groupname) REFERENCES groups(groupname) ON DELETE CASCADE
                         )""")
         print('Created table: receipts')
 
@@ -47,7 +47,7 @@ def setupTables():
                         rID int,
                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
                         cost REAL,
-                        FOREIGN KEY (rID) REFERENCES receipts(rowid)
+                        FOREIGN KEY (rID) REFERENCES receipts(rowid) ON DELETE CASCADE
                         )""")
         print('Created table: receipt_data')
 
@@ -56,7 +56,7 @@ def setupTables():
                         rID int,
                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
                         claimer varchar({MAX_USERNAME_LEN}),
-                        FOREIGN KEY (rID) REFERENCES receipts(rowid)
+                        FOREIGN KEY (rID) REFERENCES receipts(rowid) ON DELETE CASCADE
                         )""")
         print('Created table: claimed_items')
         
@@ -65,7 +65,7 @@ def setupTables():
                         groupname varchar({MAX_GROUPNAME_LEN}),
                         requester varchar({MAX_USERNAME_LEN}),
                         request varchar({MAX_REQUEST_LEN}),
-                        FOREIGN KEY (groupname) REFERENCES groups(groupname)
+                        FOREIGN KEY (groupname) REFERENCES groups(groupname) ON DELETE CASCADE
                         )""")
         print('Created table: requests')
     
@@ -89,7 +89,7 @@ def userIsOwnerOfGroup(groupname, username, cur=None):
         con = sqlite3.connect(DB_NAME)
         cur = con.cursor()
 
-    owner = cur.execute(f"SELECT owner FROM groups WHERE groupname='{groupname}'")
+    owner = cur.execute(f"SELECT owner FROM groups WHERE groupname='{groupname}'").fetchone()
     if con:
         con.close
     return len(owner) != 0 and owner[0] == username
@@ -163,6 +163,7 @@ def deleteGroup(groupname, username):
     cur = con.cursor()
 
     if userIsOwnerOfGroup(groupname, username):
+        cur.execute(f"DELETE FROM groups WHERE groupname='{groupname}'")
         con.commit()
 
     con.close()
@@ -180,6 +181,7 @@ def getMembers(groupname):
     members = cur.execute(f"SELECT membername FROM group_members WHERE groupname='{groupname}'").fetchall()
     con.close()
 
+    members = [members[i][0] for i in range(len(members))]
     members.remove(owner) # no need to list the owner as a member since they literally own the group lol
     return owner, members
 
