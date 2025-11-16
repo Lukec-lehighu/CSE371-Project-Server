@@ -12,7 +12,8 @@ def _table_exists(name, cur):
     return not res.fetchone() is None
 
 def setupTables():
-    cur = sqlite3.connect(DB_NAME).cursor()
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
 
     # make sure each table exists and if not, create it
     if not _table_exists('groups', cur):
@@ -24,14 +25,6 @@ def setupTables():
                     """)
         print('Created table: groups')
     
-    if not _table_exists('receipt_data', cur):
-        cur.execute(f"""CREATE TABLE receipt_data(
-                        rnum PRIMARY KEY,
-                        groupname,
-                        owner varchar({MAX_USERNAME_LEN})
-                    )""")
-        print('Created table: receipts')
-
     if not _table_exists('group_members', cur):
         cur.execute(f"""CREATE TABLE group_members(
                         groupname varchar({MAX_GROUPNAME_LEN}),
@@ -68,21 +61,42 @@ def setupTables():
                         requester varchar({MAX_USERNAME_LEN}),
                         request varchar({MAX_REQUEST_LEN})
                         )""")
+    con.close()
 
 def getGroups(username):
     # get all of the groups that the user has access to 
-    cur = sqlite3.connect(DB_NAME).cursor()
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
     groups = cur.execute("SELECT groupname FROM groups").fetchall()
     joined = cur.execute(f"SELECT groupname FROM group_members WHERE membername='{username}'").fetchall()
+
+    con.close()
 
     res = [[group, group in joined] for group in groups]
     return res
 
-def userInGroup(groupname, member, cur=None):
+def userIsOwnerOfGroup(groupname, username, cur=None):
+    con = None
     if not cur:
-        cur = sqlite3.connect(DB_NAME).cursor()
+        con = sqlite3.connect(DB_NAME)
+        cur = con.cursor()
+
+    owner = cur.execute(f"SELECT owner FROM groups WHERE groupname='{groupname}'")
+    if con:
+        con.close
+    return len(owner) != 0 and owner[0] == username
+
+def userInGroup(groupname, member, cur=None):
+    con = None
+    if not cur:
+        con = sqlite3.connect(DB_NAME)
+        cur = con.cursor()
 
     already_joined = cur.execute(f"SELECT * FROM group_members WHERE groupname='{groupname}' AND membername='{member}'").fetchall()
+
+    if con:
+        con.close()
+
     if len(already_joined) != 0:
         return True
     return False
@@ -104,9 +118,11 @@ def newGroup(groupname, ownername, public):
         cur.execute("INSERT INTO group_members (groupname, membername) VALUES" \
                     f"('{groupname}', '{ownername}')")
         con.commit()
+        con.close()
         return True
     except Exception as e:
         print(e)
+        con.close()
         return False
     
 def joinGroup(groupname, username):
@@ -127,13 +143,25 @@ def joinGroup(groupname, username):
         cur.execute("INSERT INTO group_members (groupname, membername) VALUES" \
                         f"('{groupname}', '{username}')")
         con.commit()
+        con.close()
         return True
     except Exception as e:
         print(e)
+        con.close()
         return False
+    
+def deleteGroup(groupname, username):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    if userIsOwnerOfGroup(groupname, username):
+        con.commit()
+
+    con.close()
 
 def getMembers(groupname):
-    cur = sqlite3.connect(DB_NAME).cursor()
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
 
     # make sure group exists
     group = cur.execute(f"SELECT owner FROM groups WHERE groupname='{groupname}'").fetchone()
@@ -142,13 +170,17 @@ def getMembers(groupname):
     
     owner = group[0]
     members = cur.execute(f"SELECT membername FROM group_members WHERE groupname='{groupname}'").fetchall()
+    con.close()
+
     members.remove(owner) # no need to list the owner as a member since they literally own the group lol
     return owner, members
 
 def getReceipts(groupname):
-    cur = sqlite3.connect(DB_NAME).cursor()
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
 
     receipts = cur.execute(f"SELECT * FROM receipts WHERE groupname='{groupname}'").fetchall()
+    con.close()
     return receipts
 
 def newReceipt(groupname, name, author):
@@ -158,22 +190,49 @@ def newReceipt(groupname, name, author):
     try:
         cur.execute(f"INSERT INTO receipts (name, groupname, author) VALUES('{name}', '{groupname}', '{author}')")
         con.commit()
+        con.close()
 
         return True
     except Exception as e:
         print(e)
+        con.close()
         return False
     
 def getRequests(groupname):
-    cur = sqlite3.connect(DB_NAME).cursor()
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
 
     # TODO: if the member isn't in the group, don't let them see information (not necessary, but good practice :3)
     #if not userInGroup(groupname=groupname, member=)
 
-    requests = cur.execute(f"SELECT requester, request FROM requests WHERE groupname='{groupname}'").fetchall()
+    requests = cur.execute(f"SELECT rowid, requester, request FROM requests WHERE groupname='{groupname}'").fetchall()
+    con.close()
     return requests
 
-def newRequest(groupname, displayname, request):
-    cur = sqlite3.connect(DB_NAME).cursor()
+def newRequest(groupname, username, displayname, request):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    if userInGroup(groupname=groupname, member=username, cur=cur):
+        try:
+            cur.execute(f"INSERT INTO requests (groupname, requester, request) VALUES('{groupname}', '{displayname}', '{request}')")
+            con.commit()
+            con.close()
+
+            return True
+        except Exception as e:
+            print(e)
+        
+    con.close()
+    return False
+
+def removeRequest(rid: int):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    cur.execute(f"DELETE FROM requests WHERE rowid={rid}")
+    con.commit()
+
+    con.close()
 
 setupTables()
