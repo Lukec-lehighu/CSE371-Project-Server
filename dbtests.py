@@ -12,13 +12,13 @@ def runTest(function, name="function"):
     total_ran += 1
     try:
         res = function()
-        print(Fore.GREEN + f'[+] {name} call success:' + Fore.RESET)
         if not res is None:
             print(res)
 
             if type(res) == bool:
                 assert res # make sure that res is always True if it is a boolean
 
+        print(Fore.GREEN + f'[+] {name} call success:' + Fore.RESET)
         numpassed += 1
     except Exception as e:
         print(Fore.RED + f"[-] {name} call failed: {e}" + Fore.RESET)

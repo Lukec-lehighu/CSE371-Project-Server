@@ -121,7 +121,7 @@ def newGroup(groupname, ownername, public):
 
     try:
         cur.execute("INSERT INTO groups (groupname, owner, public) VALUES" \
-                    f"(?, ?, ?", (groupname, ownername, 1 if public else 0))
+                    f"(?, ?, ?)", (groupname, ownername, 1 if public else 0))
         cur.execute("INSERT INTO group_members (groupname, membername) VALUES" \
                     f"(?, ?)", (groupname, ownername))
         con.commit()
@@ -316,15 +316,15 @@ def toggleClaimItem(rid, itemname, username): # instead of "add" and "remove" fo
     cur = con.cursor()
 
     # check to see if entry already exists
-    res = cur.execute(f"SELECT * FROM claimed_items WHERE rID={rid} AND itemname='{itemname}' AND claimer='{username}'").fetchone()
+    res = cur.execute(f"SELECT * FROM claimed_items WHERE rID=? AND itemname=? AND claimer=?", (rid, itemname, username)).fetchone()
 
     try:
         if not res or len(res) == 0:
             # entry doesn't exist, add it
-            cur.execute(f"INSERT INTO claimed_items (rID, itemname, claimer) VALUES({rid}, '{itemname}', '{username}')")
+            cur.execute(f"INSERT INTO claimed_items (rID, itemname, claimer) VALUES(?, ?, ?)", (rid, itemname, username))
         else:
             # entry exists, remove it
-            cur.execute(f"DELETE FROM claimed_items WHERE rID={rid} AND itemname='{itemname}' AND claimer='{username}'")
+            cur.execute(f"DELETE FROM claimed_items WHERE rID=? AND itemname=? AND claimer=?", (rid, itemname, username))
 
         con.commit()
         con.close()
@@ -339,27 +339,60 @@ def getDept(groupname, username):
     cur = con.cursor()
 
     # get receipts in group
-    receipts = cur.execute(f"SELECT rID, author FROM receipts WHERE groupname='{groupname}'").fetchall()
+    receipts = cur.execute(f"SELECT rID, author FROM receipts WHERE groupname=?", (groupname,)).fetchall()
 
-    # build dictionary from collected data
+    # build dictionary from collected receipt data
     rdict = {}
     for rid, author in receipts:
-        rdict[rid] = author
-    print(rdict)
+        if author != username:
+            rdict[rid] = author
 
-    # get items user has claimed from receipts
+    # get items user has claimed from each receipt
+    claimed_items = {}
+    for rid in rdict.keys():
+        c = cur.execute(f"SELECT itemname FROM claimed_items WHERE rID=? AND claimer=?", (rid, username)).fetchall()
+        claimed_items[rid] = c
 
-    # for each claimed item: 
-        # get number of people who have also claimed same receipt items
+    # for each claimed item:
+    debts = {}
+    for rid in claimed_items.keys():
+        # get author of receipt
+        author = cur.execute(f"SELECT author FROM receipts WHERE rID=?", (rid,)).fetchone()[0]
 
-        # take total cost and divide among claimers
+        for itemname in claimed_items[rid]:
+            # get number of people who have also claimed same receipt items
+            num_people_claimed = len(cur.execute(f"SELECT itemname FROM claimed_items WHERE rID=? AND itemname=?", (rid, itemname)).fetchall())
 
-        # add to total debt
+            # take total cost and divide among claimers
+            total_cost = cur.execute(f"SELECT cost FROM receipt_data WHERE rID=? AND itemname=?", (rid, itemname)).fetchone()[0]
+            
+            cost = total_cost / num_people_claimed
+
+            # add to total debt
+            debts[author] = debts.get(author, 0) + cost
 
     # return total debt
-    
     con.close()
+    return debts
 
+# if not _table_exists('receipts', cur):
+#         cur.execute(f"""CREATE TABLE receipts(
+#                         rID INTEGER NOT NULL,
+#                         name varchar({MAX_GROUPNAME_LEN}),
+#                         groupname varchar({MAX_GROUPNAME_LEN}),
+#                         author varchar({MAX_USERNAME_LEN}),
+#                         PRIMARY KEY(rID),
+#                         FOREIGN KEY (groupname) REFERENCES groups(groupname) ON DELETE CASCADE
+#                         )""")
+#         print('Created table: receipts')
+# if not _table_exists('receipt_data', cur):
+#         cur.execute(f"""CREATE TABLE receipt_data(
+#                         rID int,
+#                         itemname varchar({MAX_RECEIPT_ITEM_LEN}) PRIMARY KEY,
+#                         cost REAL,
+#                         FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
+#                         )""")
+#         print('Created table: receipt_data')
 # if not _table_exists('claimed_items', cur):
 #         cur.execute(f"""CREATE TABLE claimed_items(
 #                         rID int,
