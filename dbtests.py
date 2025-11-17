@@ -16,6 +16,9 @@ def runTest(function, name="function"):
         if not res is None:
             print(res)
 
+            if type(res) == bool:
+                assert res # make sure that res is always True if it is a boolean
+
         numpassed += 1
     except Exception as e:
         print(Fore.RED + f"[-] {name} call failed: {e}" + Fore.RESET)
@@ -58,6 +61,10 @@ def tests():
     runTest(lambda:getClaimedItems(1), "getClaimedItems")
     runTest(lambda:toggleClaimItem(1, 'Tomatoes', 'Testscript'), "toggleClaimItem")
 
+    #dept
+    runTest(lambda:getDept('Testgroup', 'Testscript'), "getDebt")
+
+    #cleanup
     runTest(lambda:deleteGroup('Testgroup', 'Testscript'), "deleteGroup")
 
     print()

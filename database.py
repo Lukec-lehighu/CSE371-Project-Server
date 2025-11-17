@@ -77,7 +77,7 @@ def getGroups(username):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
     groups = cur.execute("SELECT groupname FROM groups").fetchall()
-    joined = cur.execute(f"SELECT groupname FROM group_members WHERE membername='{username}'").fetchall()
+    joined = cur.execute(f"SELECT groupname FROM group_members WHERE membername=?", (username,)).fetchall()
 
     con.close()
 
@@ -90,7 +90,7 @@ def userIsOwnerOfGroup(groupname, username, cur=None):
         con = sqlite3.connect(DB_NAME)
         cur = con.cursor()
 
-    owner = cur.execute(f"SELECT owner FROM groups WHERE groupname='{groupname}'").fetchone()
+    owner = cur.execute(f"SELECT owner FROM groups WHERE groupname=?", (groupname,)).fetchone()
     if con:
         con.close
     return len(owner) != 0 and owner[0] == username
@@ -101,7 +101,7 @@ def userInGroup(groupname, member, cur=None):
         con = sqlite3.connect(DB_NAME)
         cur = con.cursor()
 
-    already_joined = cur.execute(f"SELECT * FROM group_members WHERE groupname='{groupname}' AND membername='{member}'").fetchall()
+    already_joined = cur.execute(f"SELECT * FROM group_members WHERE groupname=? AND membername=?", (groupname, member)).fetchall()
 
     if con:
         con.close()
@@ -119,13 +119,11 @@ def newGroup(groupname, ownername, public):
     if len(ownername) > MAX_USERNAME_LEN:
         ownername = ownername[0:MAX_USERNAME_LEN]
 
-    # TODO: have more checks to avoid SQL code injections and such
-
     try:
         cur.execute("INSERT INTO groups (groupname, owner, public) VALUES" \
-                    f"('{groupname}', '{ownername}', {1 if public else 0})")
+                    f"(?, ?, ?", (groupname, ownername, 1 if public else 0))
         cur.execute("INSERT INTO group_members (groupname, membername) VALUES" \
-                    f"('{groupname}', '{ownername}')")
+                    f"(?, ?)", (groupname, ownername))
         con.commit()
         con.close()
         return True
@@ -139,7 +137,7 @@ def joinGroup(groupname, username):
     cur = con.cursor()
 
     # check to make sure the username has permission to join or is already joined
-    isPublic = cur.execute(f"SELECT public FROM groups WHERE groupname='{groupname}'").fetchone()
+    isPublic = cur.execute(f"SELECT public FROM groups WHERE groupname=?", (groupname,)).fetchone()
     if not isPublic[0]:
         return False
 
@@ -150,7 +148,7 @@ def joinGroup(groupname, username):
     try:
         # execute join command and commit changes
         cur.execute("INSERT INTO group_members (groupname, membername) VALUES" \
-                        f"('{groupname}', '{username}')")
+                        f"(?, ?)", (groupname, username))
         con.commit()
         con.close()
         return True
@@ -165,7 +163,7 @@ def deleteGroup(groupname, username):
 
     if userIsOwnerOfGroup(groupname, username):
         cur.execute("PRAGMA foreign_keys = ON") # allow for cascading delete
-        cur.execute(f"DELETE FROM groups WHERE groupname='{groupname}'")
+        cur.execute(f"DELETE FROM groups WHERE groupname=?", (groupname,))
         con.commit()
 
     con.close()
@@ -175,12 +173,12 @@ def getMembers(groupname):
     cur = con.cursor()
 
     # make sure group exists
-    group = cur.execute(f"SELECT owner FROM groups WHERE groupname='{groupname}'").fetchone()
+    group = cur.execute(f"SELECT owner FROM groups WHERE groupname=?", (groupname,)).fetchone()
     if len(group) == 0:
         return 'DNE', []
     
     owner = group[0]
-    members = cur.execute(f"SELECT membername FROM group_members WHERE groupname='{groupname}'").fetchall()
+    members = cur.execute(f"SELECT membername FROM group_members WHERE groupname=?", (groupname,)).fetchall()
     con.close()
 
     members = [members[i][0] for i in range(len(members))]
@@ -191,7 +189,7 @@ def getReceipts(groupname):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
 
-    receipts = cur.execute(f"SELECT * FROM receipts WHERE groupname='{groupname}'").fetchall()
+    receipts = cur.execute(f"SELECT * FROM receipts WHERE groupname=?", (groupname,)).fetchall()
     con.close()
     return receipts
 
@@ -201,7 +199,7 @@ def newReceipt(groupname, name, author):
     cur = con.cursor()
 
     try:
-        cur.execute(f"INSERT INTO receipts (name, groupname, author) VALUES('{name}', '{groupname}', '{author}')")
+        cur.execute(f"INSERT INTO receipts (name, groupname, author) VALUES(?, ?, ?)", (name, groupname, author))
         con.commit()
         con.close()
 
@@ -219,7 +217,7 @@ def removeReceipt(rowid:int):
 
     try:
         cur.execute("PRAGMA foreign_keys = ON") # allow for cascading delete
-        cur.execute(f"DELETE FROM receipts WHERE rowid={rowid}")
+        cur.execute(f"DELETE FROM receipts WHERE rowid=?", (rowid,))
         con.commit()
         con.close()
 
@@ -236,7 +234,7 @@ def getRequests(groupname):
     # TODO: if the member isn't in the group, don't let them see information (not necessary, but good practice :3)
     #if not userInGroup(groupname=groupname, member=)
 
-    requests = cur.execute(f"SELECT rowid, requester, request FROM requests WHERE groupname='{groupname}'").fetchall()
+    requests = cur.execute(f"SELECT rowid, requester, request FROM requests WHERE groupname=?", (groupname,)).fetchall()
     con.close()
     return requests
 
@@ -246,13 +244,15 @@ def newRequest(groupname, username, displayname, request):
 
     if userInGroup(groupname=groupname, member=username, cur=cur):
         try:
-            cur.execute(f"INSERT INTO requests (groupname, requester, request) VALUES('{groupname}', '{displayname}', '{request}')")
+            cur.execute(f"INSERT INTO requests (groupname, requester, request) VALUES(?, ?, ?)", (groupname, displayname, request))
             con.commit()
             con.close()
 
             return True
         except Exception as e:
             print(e)
+            con.close()
+            return False
         
     con.close()
     return False
@@ -265,7 +265,7 @@ def removeRequest(rid: int):
     # TODO: try-except?
 
     cur.execute("PRAGMA foreign_keys = ON") # allow for cascading delete
-    cur.execute(f"DELETE FROM requests WHERE rowid={rid}")
+    cur.execute(f"DELETE FROM requests WHERE rowid=?", (rid,))
     con.commit()
 
     con.close()
@@ -274,7 +274,7 @@ def getReceiptItems(rid):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
 
-    data = cur.execute(f"SELECT itemname, cost FROM receipt_data WHERE rID={rid}").fetchall()
+    data = cur.execute(f"SELECT itemname, cost FROM receipt_data WHERE rID=?", (rid,)).fetchall()
     con.close()
     return data
 
@@ -283,7 +283,7 @@ def addReceiptItem(rid, itemname, cost:float):
     cur = con.cursor()
     
     try:
-        cur.execute(f"INSERT INTO receipt_data (rID, itemname, cost) VALUES({rid}, '{itemname}', {cost})")
+        cur.execute(f"INSERT INTO receipt_data (rID, itemname, cost) VALUES(?, ?, ?)", (rid, itemname, cost))
         con.commit()
         con.close()
         return True
@@ -298,7 +298,7 @@ def removeReceiptItem(rid, itemname):
 
     # TODO: try-except?
 
-    cur.execute(f"DELETE FROM receipt_data WHERE rID={rid} AND itemname='{itemname}'")
+    cur.execute(f"DELETE FROM receipt_data WHERE rID=? AND itemname=?", (rid, itemname))
     con.commit()
 
     con.close()
@@ -307,7 +307,7 @@ def getClaimedItems(rid):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
 
-    data = cur.execute(f"SELECT itemname, claimer FROM claimed_items WHERE rID={rid}").fetchall()
+    data = cur.execute(f"SELECT itemname, claimer FROM claimed_items WHERE rID=?", (rid,)).fetchall()
     con.close()
     return data
 
@@ -335,7 +335,30 @@ def toggleClaimItem(rid, itemname, username): # instead of "add" and "remove" fo
         return False
 
 def getDept(groupname, username):
-    pass
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    # get receipts in group
+    receipts = cur.execute(f"SELECT rID, author FROM receipts WHERE groupname='{groupname}'").fetchall()
+
+    # build dictionary from collected data
+    rdict = {}
+    for rid, author in receipts:
+        rdict[rid] = author
+    print(rdict)
+
+    # get items user has claimed from receipts
+
+    # for each claimed item: 
+        # get number of people who have also claimed same receipt items
+
+        # take total cost and divide among claimers
+
+        # add to total debt
+
+    # return total debt
+    
+    con.close()
 
 # if not _table_exists('claimed_items', cur):
 #         cur.execute(f"""CREATE TABLE claimed_items(
