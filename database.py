@@ -21,8 +21,7 @@ def setupTables():
                         groupname varchar({MAX_GROUPNAME_LEN}) PRIMARY KEY,
                         owner varchar({MAX_USERNAME_LEN}),
                         public int
-                    )
-                    """)
+                    )""")
         print('Created table: groups')
     
     if not _table_exists('group_members', cur):
@@ -47,7 +46,7 @@ def setupTables():
     if not _table_exists('receipt_data', cur):
         cur.execute(f"""CREATE TABLE receipt_data(
                         rID int,
-                        itemname varchar({MAX_RECEIPT_ITEM_LEN}),
+                        itemname varchar({MAX_RECEIPT_ITEM_LEN}) PRIMARY KEY,
                         cost REAL,
                         FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
                         )""")
@@ -196,6 +195,7 @@ def getReceipts(groupname):
     con.close()
     return receipts
 
+# TODO: username check
 def newReceipt(groupname, name, author):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
@@ -211,6 +211,7 @@ def newReceipt(groupname, name, author):
         con.close()
         return False
     
+# TODO: username check
 def removeReceipt(rowid:int):
     # TODO: protect this function to only fire if user is in the group
     con = sqlite3.connect(DB_NAME)
@@ -256,6 +257,7 @@ def newRequest(groupname, username, displayname, request):
     con.close()
     return False
 
+# TODO: username checks for all of these functions
 def removeRequest(rid: int):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
@@ -267,5 +269,56 @@ def removeRequest(rid: int):
     con.commit()
 
     con.close()
+
+def getReceiptItems(rid):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    data = cur.execute(f"SELECT itemname, cost FROM receipt_data WHERE rID={rid}").fetchall()
+    con.close()
+    return data
+
+def addReceiptItem(rid, itemname, cost:float):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+    
+    try:
+        cur.execute(f"INSERT INTO receipt_data (rID, itemname, cost) VALUES({rid}, '{itemname}', {cost})")
+        con.commit()
+        con.close()
+        return True
+    except Exception as e:
+        print(e)
+        con.close()
+        return False
+    
+def removeReceiptItem(rid, itemname):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    # TODO: try-except?
+
+    cur.execute(f"DELETE FROM receipt_data WHERE rID={rid} AND itemname='{itemname}'")
+    con.commit()
+
+    con.close()
+
+def getClaimedItems(groupname, username):
+    pass
+
+def toggleClaimItem(groupname, itemname, username): # instead of "add" and "remove" for claimed functions, just make it all one function so that the client code can just use a button
+    pass
+
+def getDept(groupname, username):
+    pass
+
+# if not _table_exists('receipt_data', cur):
+#         cur.execute(f"""CREATE TABLE receipt_data(
+#                         rID int,
+#                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
+#                         cost REAL,
+#                         FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
+#                         )""")
+#         print('Created table: receipt_data')
 
 setupTables()

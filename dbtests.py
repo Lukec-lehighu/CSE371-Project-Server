@@ -1,5 +1,6 @@
 from database import *
 from colorama import init, Fore
+import sys
 
 def runTest(function, name="function"):
     try:
@@ -27,10 +28,15 @@ def tests():
     runTest(lambda:newReceipt('Testgroup', 'receipt1', 'display name'), "newReceipt")
     runTest(lambda:newReceipt('Testgroup', 'receipt2', 'display name 2'), "newReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
-    runTest(lambda:removeReceipt(1), "removeReceipt")
+    runTest(lambda:removeReceipt(2), "removeReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
 
     #receipt items
+    runTest(lambda:getReceiptItems(1), "getReceiptItems")
+    runTest(lambda:addReceiptItem(1, 'Tomatoes', 43.23), "addReceiptItem")
+    runTest(lambda:addReceiptItem(1, 'Bread', 2.43), "addReceiptItem")
+    runTest(lambda:removeReceiptItem(1, 'Bread'), "removeReceiptItem")
+    runTest(lambda:getReceiptItems(1), "getReceiptItems")
 
     #requests
     runTest(lambda:newRequest('Testgroup', 'Testscript', 'display name', 'I want bread lol'), "newRequest")
@@ -42,5 +48,13 @@ def tests():
 
     runTest(lambda:deleteGroup('Testgroup', 'Testscript'), "deleteGroup")
 
+def reset():
+    init()
+    runTest(lambda:deleteGroup('Testgroup', 'Testscript'), "deleteGroup")
+
 if __name__=='__main__':
-    tests()
+    print(sys.argv)
+    if len(sys.argv) > 1 and sys.argv[1]=='reset':
+        reset()
+    else:
+        tests()
