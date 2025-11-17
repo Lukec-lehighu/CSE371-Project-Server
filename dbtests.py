@@ -2,14 +2,23 @@ from database import *
 from colorama import init, Fore
 import sys
 
+# keep track of tests passed vs failed
+numpassed = 0
+total_ran = 0
+
 def runTest(function, name="function"):
+    global numpassed, total_ran
+
+    total_ran += 1
     try:
         res = function()
-        print(Fore.GREEN + f'{name} call success:' + Fore.RESET)
+        print(Fore.GREEN + f'[+] {name} call success:' + Fore.RESET)
         if not res is None:
             print(res)
+
+        numpassed += 1
     except Exception as e:
-        print(Fore.RED + f"{name} call failed: {e}" + Fore.RESET)
+        print(Fore.RED + f"[-] {name} call failed: {e}" + Fore.RESET)
     print()
 
 def tests():
@@ -45,8 +54,14 @@ def tests():
     runTest(lambda:getRequests('Testgroup'), "getRequests")
 
     #claimed items
+    runTest(lambda:toggleClaimItem(1, 'Tomatoes', 'Testscript'), "toggleClaimItem")
+    runTest(lambda:getClaimedItems(1), "getClaimedItems")
+    runTest(lambda:toggleClaimItem(1, 'Tomatoes', 'Testscript'), "toggleClaimItem")
 
     runTest(lambda:deleteGroup('Testgroup', 'Testscript'), "deleteGroup")
+
+    print()
+    print(f"Tests finished: {numpassed} / {total_ran} passed")
 
 def reset():
     init()

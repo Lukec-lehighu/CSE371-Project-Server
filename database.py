@@ -303,22 +303,47 @@ def removeReceiptItem(rid, itemname):
 
     con.close()
 
-def getClaimedItems(groupname, username):
-    pass
+def getClaimedItems(rid):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
 
-def toggleClaimItem(groupname, itemname, username): # instead of "add" and "remove" for claimed functions, just make it all one function so that the client code can just use a button
-    pass
+    data = cur.execute(f"SELECT itemname, claimer FROM claimed_items WHERE rID={rid}").fetchall()
+    con.close()
+    return data
+
+def toggleClaimItem(rid, itemname, username): # instead of "add" and "remove" for claimed functions, just make it all one function so that the client code can just use a button
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    # check to see if entry already exists
+    res = cur.execute(f"SELECT * FROM claimed_items WHERE rID={rid} AND itemname='{itemname}' AND claimer='{username}'").fetchone()
+
+    try:
+        if not res or len(res) == 0:
+            # entry doesn't exist, add it
+            cur.execute(f"INSERT INTO claimed_items (rID, itemname, claimer) VALUES({rid}, '{itemname}', '{username}')")
+        else:
+            # entry exists, remove it
+            cur.execute(f"DELETE FROM claimed_items WHERE rID={rid} AND itemname='{itemname}' AND claimer='{username}'")
+
+        con.commit()
+        con.close()
+        return True
+    except Exception as e:
+        print(e)
+        con.close()
+        return False
 
 def getDept(groupname, username):
     pass
 
-# if not _table_exists('receipt_data', cur):
-#         cur.execute(f"""CREATE TABLE receipt_data(
+# if not _table_exists('claimed_items', cur):
+#         cur.execute(f"""CREATE TABLE claimed_items(
 #                         rID int,
 #                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
-#                         cost REAL,
+#                         claimer varchar({MAX_USERNAME_LEN}),
 #                         FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
 #                         )""")
-#         print('Created table: receipt_data')
+#         print('Created table: claimed_items')
 
 setupTables()
