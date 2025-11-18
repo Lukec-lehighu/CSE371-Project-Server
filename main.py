@@ -127,7 +127,7 @@ def delete_group():
 
     return jsonify(resp)
 
-@app.route('/receipts', methods=['GET', 'POST', 'DELETE'])
+@app.route('/receipts', methods=['POST'])
 def handle_receipts():
     '''
     Request structure:
@@ -184,6 +184,67 @@ def handle_receipts():
                     resp['ok'] = 'Deleted receipt'
                 else:
                     resp['error'] = 'Unable to delete (invalid rowid or is not owner)'
+
+    return jsonify(resp)
+
+@app.route('/requests', methods=['POST'])
+def handle_requests():
+    '''
+    Request structure:
+        All: 
+            {
+                verb: 'GET' / 'POST' / 'DELETE'
+            }
+
+        GET:
+            {
+                token,
+                groupname
+            }
+        POST:
+            {
+                token,
+                groupname,
+                request
+            }
+        DELETE:
+            {
+                token,
+                rowid (rID of request to be deleted -> found in GET request results)
+            }
+    '''
+
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        username = check_auth(token=token)
+        displayname = check_auth(token=token, displayname=True)
+
+        if len(username) == 0:
+            resp['error'] = "User not signed in!"
+        else:
+            verb = body.get('verb', '')
+
+            if verb == 'GET':
+                groupname = body.get('groupname', '')
+                resp['ok'] = database.getRequests(groupname)
+            elif verb == 'POST':
+                groupname = body.get('groupname', '')
+                request = body.get('request', '')
+
+                if database.newRequest(groupname=groupname, username=username, displayname=displayname, request=request):
+                    resp['ok'] = 'Request made'
+                else:
+                    resp['error'] = 'Request already exists!'
+            elif verb == 'DELETE':
+                rid = int(body.get('rowid', ''))
+                
+                if database.removeRequest(rid):
+                    resp['ok'] = 'Deleted receipt'
+                else:
+                    resp['error'] = 'Unable to delete (invalid rowid)'
 
     return jsonify(resp)
 
