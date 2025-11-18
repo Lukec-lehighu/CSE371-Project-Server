@@ -11,6 +11,8 @@ def _table_exists(name, cur):
     res = cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{name}'")
     return not res.fetchone() is None
 
+# TODO: keep track of email of author in receipts for ownership (using display name is not reliable since people can have the same name)
+
 def setupTables():
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
@@ -209,11 +211,16 @@ def newReceipt(groupname, name, author):
         con.close()
         return False
     
-# TODO: username check
-def removeReceipt(rowid:int):
+def removeReceipt(rowid:int, username):
     # TODO: protect this function to only fire if user is in the group
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
+
+    #get owner of receipt and check to make sure it's the username
+    receipt_owner = cur.execute("SELECT author FROM receipts WHERE rID=?", (rowid,)).fetchone()
+    if len(receipt_owner) == 0 or receipt_owner[0] != username:
+        con.close()
+        return False
 
     try:
         cur.execute("PRAGMA foreign_keys = ON") # allow for cascading delete

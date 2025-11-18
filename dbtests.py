@@ -40,7 +40,7 @@ def tests():
     runTest(lambda:newReceipt('Testgroup', 'receipt1', 'display name'), "newReceipt")
     runTest(lambda:newReceipt('Testgroup', 'receipt2', 'display name 2'), "newReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
-    runTest(lambda:removeReceipt(2), "removeReceipt")
+    runTest(lambda:removeReceipt(2, 'display name'), "removeReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
 
     #receipt items

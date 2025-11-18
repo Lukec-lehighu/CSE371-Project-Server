@@ -11,10 +11,17 @@ app = Flask(__name__)
 CORS(app)
 
 # Helper function to check if the user has authority to use an email as their username
-def check_auth(token):
-    res = requests.get(f'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={token}')
-    response = json.loads(res.text)
-    return response.get('email', '')
+def check_auth(token, displayname=True):
+    if displayname:
+        res = requests.get(f'https://www.googleapis.com/oauth2/v1/userinfo?access_token={token}')
+        response = json.loads(res.text)
+
+        return response.get('name')
+    else:
+        res = requests.get(f'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={token}')
+        response = json.loads(res.text)
+
+        return response.get('email', '')
 
 # get the names of all the groups the user has access to
 @app.route('/groups', methods=['POST'])
@@ -99,7 +106,88 @@ def get_members():
         resp['error'] = 'Error getting group information (invalid URI params)'  
     return jsonify(resp)
     
-@app.rote('/delete_group')
+@app.route('/delete_group')
+def delete_group():
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        groupname = body.get('groupname', '') # this will be an auth token, NOT an email
+
+        ownerEmail = check_auth(token=token) # convert auth token to email
+
+        if len(ownerEmail)==0:
+            resp['error'] = "Not signed in! Please refresh the page."
+        else:
+            if database.delete_group(groupname, ownerEmail):
+                resp['ok'] = 'Group deleted'
+    else:
+        resp['error'] = 'INVALID REQUEST'
+
+    return jsonify(resp)
+
+@app.route('/receipts', methods=['GET', 'POST', 'DELETE'])
+def handle_receipts():
+    '''
+    Request structure:
+        All: 
+            {
+                verb: 'GET' / 'POST' / 'DELETE'
+            }
+
+        GET:
+            {
+                token,
+                groupname
+            }
+        POST:
+            {
+                token,
+                groupname,
+                name (name of new receipt)
+            }
+        DELETE:
+            {
+                token,
+                rowid (rID of receipt to be deleted -> found in GET request results)
+            }
+    '''
+
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        displayname = check_auth(token=token)
+
+        if len(displayname) == 0:
+            resp['error'] = "User not signed in!"
+        else:
+            verb = body.get('verb', '')
+
+            if verb == 'GET':
+                groupname = body.get('groupname', '')
+                resp['ok'] = database.getReceipts(groupname)
+            elif verb == 'POST':
+                groupname = body.get('groupname', '')
+                name = body.get('name', '')
+
+                if database.newReceipt(groupname=groupname, name=name, author=displayname):
+                    resp['ok'] = 'Receipt made'
+                else:
+                    resp['error'] = 'Receipt already exists!'
+            elif verb == 'DELETE':
+                rid = int(body.get('rowid', ''))
+                
+                if database.removeReceipt(rid, displayname):
+                    resp['ok'] = 'Deleted receipt'
+                else:
+                    resp['error'] = 'Unable to delete (invalid rowid or is not owner)'
+
+    return jsonify(resp)
+
+
 
 if __name__=='__main__':
     if DEVRUN:
