@@ -248,6 +248,70 @@ def handle_requests():
 
     return jsonify(resp)
 
+@app.route('/receipt_items', methods=['POST'])
+def handle_requests():
+    '''
+    Request structure:
+        All: 
+            {
+                verb: 'GET' / 'POST' / 'DELETE'
+            }
+
+        GET:
+            {
+                token,
+                rowid
+            }
+        POST:
+            {
+                token,
+                rowid,
+                itemname,
+                cost (float)
+            }
+        DELETE:
+            {
+                token,
+                rowid,
+                itemname
+            }
+    '''
+
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        username = check_auth(token=token)
+
+        if len(username) == 0:
+            resp['error'] = "User not signed in!"
+        else:
+            verb = body.get('verb', '')
+
+            if verb == 'GET':
+                rid = body.get('rowid', '')
+                resp['ok'] = database.getReceiptItems(rid=rid)
+            elif verb == 'POST':
+                rid = body.get('rowid', '')
+                itemname = body.get('itemname', '')
+                cost = float(body.get('cost', 0))
+
+                if database.addReceiptItem(rid=rid, itemname=itemname, cost=cost):
+                    resp['ok'] = 'Item added'
+                else:
+                    resp['error'] = 'Item already exists!'
+            elif verb == 'DELETE':
+                rid = int(body.get('rowid', ''))
+                itemname = body.get('itemname', '')
+                
+                if database.removeReceiptItem(rid=rid, itemname=itemname):
+                    resp['ok'] = 'Deleted item'
+                else:
+                    resp['error'] = 'Unable to delete (invalid rowid or itemname)'
+
+    return jsonify(resp)
+
 
 
 if __name__=='__main__':
