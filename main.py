@@ -184,6 +184,8 @@ def handle_receipts():
                     resp['ok'] = 'Deleted receipt'
                 else:
                     resp['error'] = 'Unable to delete (invalid rowid or is not owner)'
+    else:
+        resp['error'] = "Invalid request"
 
     return jsonify(resp)
 
@@ -245,11 +247,13 @@ def handle_requests():
                     resp['ok'] = 'Deleted receipt'
                 else:
                     resp['error'] = 'Unable to delete (invalid rowid)'
+    else:
+        resp['error'] = "Invalid request"
 
     return jsonify(resp)
 
 @app.route('/receipt_items', methods=['POST'])
-def handle_requests():
+def handle_receipt_items():
     '''
     Request structure:
         All: 
@@ -309,11 +313,89 @@ def handle_requests():
                     resp['ok'] = 'Deleted item'
                 else:
                     resp['error'] = 'Unable to delete (invalid rowid or itemname)'
+    else:
+        resp['error'] = "Invalid request"
 
     return jsonify(resp)
 
+@app.route('/claimed_items', methods=['POST'])
+def handle_claimed_items():
+    '''
+    Request structure:
+        All: 
+            {
+                verb: 'GET' / 'POST'
+            }
 
+        GET:
+            {
+                token,
+                rowid
+            }
+        POST:
+            {
+                token,
+                rowid,
+                itemname
+            }
+    '''
 
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        username = check_auth(token=token)
+
+        if len(username) == 0:
+            resp['error'] = "User not signed in!"
+        else:
+            verb = body.get('verb', '')
+
+            if verb == 'GET':
+                rid = body.get('rowid', '')
+                resp['ok'] = database.getClaimedItems(rid=rid)
+            elif verb == 'POST':
+                rid = body.get('rowid', '')
+                itemname = body.get('itemname', '')
+
+                if database.toggleClaimItem(rid=rid, itemname=itemname, username=username):
+                    resp['ok'] = 'Item claimed'
+                else:
+                    resp['error'] = 'Error claiming item!'
+    else:
+        resp['error'] = "Invalid request"
+
+    return jsonify(resp)
+
+@app.route('/debt', methods=['POST'])
+def get_debt():
+    '''
+    Request structure:
+        {
+            groupname,
+            username
+        }
+    '''
+
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        username = check_auth(token=token)
+
+        if len(username) == 0:
+            resp['error'] = "User not signed in!"
+        else:
+            groupname = body.get('groupname', '')
+            resp['ok'] = database.getDept(groupname=groupname, username=username)
+    else:
+        resp['error'] = "Invalid request"
+
+    return jsonify(resp)
+
+# entry to program:
 if __name__=='__main__':
     if DEVRUN:
         app.run() # host locally
