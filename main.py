@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from database import getGroups, newGroup, joinGroup, getMembers
+import database
 
 import requests
 import json
@@ -29,7 +29,7 @@ def get_groups():
         if len(username) == 0:
             resp['error'] = 'User is not signed in!'
         else:
-            groups = getGroups(username=username)
+            groups = database.getGroups(username=username)
             resp['ok'] = groups
     else:
         resp['error'] = 'INVALID REQUEST'
@@ -53,7 +53,7 @@ def make_group():
         elif len(ownerEmail)==0:
             resp['error'] = "Not signed in! Please refresh the page."
         else:
-            if newGroup(name, ownerEmail, public):
+            if database.newGroup(name, ownerEmail, public):
                 resp['ok'] = 'Group created'
             else:
                 resp['error'] = f'Group name "{name}" already exists in database!'
@@ -76,7 +76,7 @@ def join_group():
         elif len(groupname) == 0:
             resp['error'] = 'Invalid group name!'
         else:
-            if joinGroup(groupname=groupname, username=username):
+            if database.joinGroup(groupname=groupname, username=username):
                 resp['ok'] = 'Joined group'
             else:
                 resp['error'] = 'Unable to join group'
@@ -90,7 +90,7 @@ def get_members():
     resp = {}
     try:
         groupname = request.args.get('groupname')
-        owner, members = getMembers(groupname=groupname)
+        owner, members = database.getMembers(groupname=groupname)
         resp['ok'] = {
             'owner': owner,
             'members': members
@@ -99,6 +99,7 @@ def get_members():
         resp['error'] = 'Error getting group information (invalid URI params)'  
     return jsonify(resp)
     
+@app.rote('/delete_group')
 
 if __name__=='__main__':
     if DEVRUN:
