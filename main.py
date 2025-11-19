@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Helper function to check if the user has authority to use an email as their username
-def check_auth(token, displayname=True):
+def check_auth(token, displayname=False):
     if displayname:
         res = requests.get(f'https://www.googleapis.com/oauth2/v1/userinfo?access_token={token}')
         response = json.loads(res.text)
@@ -92,7 +92,7 @@ def join_group():
 
     return jsonify(resp)
 
-@app.route('/members')
+@app.route('/members', methods=['GET'])
 def get_members():
     resp = {}
     try:
