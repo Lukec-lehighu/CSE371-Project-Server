@@ -159,6 +159,26 @@ def joinGroup(groupname, username):
         con.close()
         return False
     
+def removeFromGroup(groupname, username, personDeleting):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    # check to make sure the person doing this has authority
+    if userIsOwnerOfGroup(groupname=groupname, username=personDeleting, cur=cur):
+        cur.execute("PRAGMA foreign_keys = ON")
+        if userIsOwnerOfGroup(groupname=groupname, username=username, cur=cur):
+            # deleting the owner of the group, delete the whole group
+            cur.execute("DELETE FROM groups WHERE groupname=?", (groupname,))
+        else:
+            # just delete the one member
+            cur.execute("DELETE FROM group_members WHERE groupname=? AND membername=?", (groupname, username))
+        con.commit()
+        con.close()
+        return True
+    else:
+        con.close()
+        return False
+
 def deleteGroup(groupname, username):
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()

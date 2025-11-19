@@ -122,6 +122,32 @@ def delete_group():
         else:
             if database.delete_group(groupname, ownerEmail):
                 resp['ok'] = 'Group deleted'
+            else:
+                resp['error'] = 'Error deleting group!'
+    else:
+        resp['error'] = 'INVALID REQUEST'
+
+    return jsonify(resp)
+
+@app.route('/remove_from_group')
+def remove_from_group():
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        groupname = body.get('groupname', '') # this will be an auth token, NOT an email
+        personToDelete = body.get('username', '')
+
+        username = check_auth(token=token) # convert auth token to email
+
+        if len(ownerEmail)==0:
+            resp['error'] = "Not signed in! Please refresh the page."
+        else:
+            if database.removeFromGroup(groupname, personToDelete, username):
+                resp['ok'] = 'User removed from group'
+            else:
+                resp['error'] = 'You do not have permission to do this!'
     else:
         resp['error'] = 'INVALID REQUEST'
 
