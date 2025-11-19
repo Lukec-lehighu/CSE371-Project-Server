@@ -129,7 +129,7 @@ def delete_group():
 
     return jsonify(resp)
 
-@app.route('/remove_from_group')
+@app.route('/remove_from_group', methods=['POST'])
 def remove_from_group():
     resp = {}
 
@@ -141,7 +141,7 @@ def remove_from_group():
 
         username = check_auth(token=token) # convert auth token to email
 
-        if len(ownerEmail)==0:
+        if len(username)==0:
             resp['error'] = "Not signed in! Please refresh the page."
         else:
             if database.removeFromGroup(groupname, personToDelete, username):
