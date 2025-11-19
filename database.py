@@ -94,7 +94,7 @@ def userIsOwnerOfGroup(groupname, username, cur=None):
 
     owner = cur.execute(f"SELECT owner FROM groups WHERE groupname=?", (groupname,)).fetchone()
     if con:
-        con.close
+        con.close()
     return len(owner) != 0 and owner[0] == username
 
 def userInGroup(groupname, member, cur=None):
@@ -238,7 +238,10 @@ def removeReceipt(rowid:int, username):
 
     #get owner of receipt and check to make sure it's the username
     receipt_owner = cur.execute("SELECT author FROM receipts WHERE rID=?", (rowid,)).fetchone()
-    if len(receipt_owner) == 0 or receipt_owner[0] != username:
+    if not receipt_owner or len(receipt_owner) == 0:
+        con.close()
+        return True # receipt doesn't exist, ignore and say it was a success
+    elif receipt_owner[0] != username:
         con.close()
         return False
 

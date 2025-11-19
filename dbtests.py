@@ -34,13 +34,15 @@ def tests():
     runTest(lambda:userIsOwnerOfGroup('Testgroup', 'Testscript'), "userIsOwnerOfGroup")
     runTest(lambda:userInGroup('Testgroup', 'Testscript'), "userInGroup")
     runTest(lambda:joinGroup('Testgroup', 'newusertest'), "joinGroup")
+    runTest(lambda:joinGroup('Testgroup', 'baduser'), "joinGroup")
+    runTest(lambda:removeFromGroup('Testgroup', 'baduser', 'Testscript'), "removeFromGroup")
     runTest(lambda:getMembers('Testgroup'), "getMembers")
 
     #receipts
     runTest(lambda:newReceipt('Testgroup', 'receipt1', 'display name'), "newReceipt")
     runTest(lambda:newReceipt('Testgroup', 'receipt2', 'display name 2'), "newReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
-    runTest(lambda:removeReceipt(2, 'display name'), "removeReceipt")
+    runTest(lambda:removeReceipt(2, 'display name 2'), "removeReceipt")
     runTest(lambda:getReceipts('Testgroup'), "getReceipts")
 
     #receipt items
