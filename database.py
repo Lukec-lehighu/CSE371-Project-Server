@@ -178,6 +178,29 @@ def removeFromGroup(groupname, username, personDeleting):
     else:
         con.close()
         return False
+    
+def addToGroup(groupname, username, personAdding):
+    con = sqlite3.connect(DB_NAME)
+    cur = con.cursor()
+
+    # check to make sure the person doing this has authority
+    if userIsOwnerOfGroup(groupname=groupname, username=personAdding, cur=cur):
+        if userInGroup(groupname=groupname, member=username, cur=cur):
+            return True # return true as a safeguard from duplicate joins
+
+        try:
+            cur.execute("INSERT INTO group_members (groupname, membername) VALUES" \
+                        f"(?, ?)", (groupname, username))
+            con.commit()
+            con.close()
+            return True
+        except Exception as e:
+            print(e)
+            con.close()
+            return False
+    else:
+        con.close()
+        return False
 
 def deleteGroup(groupname, username):
     con = sqlite3.connect(DB_NAME)

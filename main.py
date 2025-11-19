@@ -153,6 +153,30 @@ def remove_from_group():
 
     return jsonify(resp)
 
+@app.route('/add_to_private', methods=['POST'])
+def add_to_private():
+    resp = {}
+
+    body = request.json
+    if body:
+        token = body.get('token', '')
+        groupname = body.get('groupname', '') # this will be an auth token, NOT an email
+        personToAdd = body.get('username', '')
+
+        username = check_auth(token=token) # convert auth token to email
+
+        if len(username)==0:
+            resp['error'] = "Not signed in! Please refresh the page."
+        else:
+            if database.addToGroup(groupname, personToAdd, username):
+                resp['ok'] = 'User added to group'
+            else:
+                resp['error'] = 'You do not have permission to do this!'
+    else:
+        resp['error'] = 'INVALID REQUEST'
+
+    return jsonify(resp)
+
 @app.route('/receipts', methods=['POST'])
 def handle_receipts():
     '''
