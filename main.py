@@ -284,9 +284,9 @@ def handle_requests():
                 resp['ok'] = database.getRequests(groupname)
             elif verb == 'POST':
                 groupname = body.get('groupname', '')
-                request = body.get('request', '')
+                req = body.get('request', '')
 
-                if database.newRequest(groupname=groupname, username=username, displayname=displayname, request=request):
+                if database.newRequest(groupname=groupname, username=username, displayname=displayname, request=req):
                     resp['ok'] = 'Request made'
                 else:
                     resp['error'] = 'Request already exists!'

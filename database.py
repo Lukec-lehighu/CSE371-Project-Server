@@ -300,7 +300,6 @@ def newRequest(groupname, username, displayname, request):
             cur.execute(f"INSERT INTO requests (groupname, requester, request) VALUES(?, ?, ?)", (groupname, displayname, request))
             con.commit()
             con.close()
-
             return True
         except Exception as e:
             print(e)
@@ -322,6 +321,7 @@ def removeRequest(rid: int):
     con.commit()
 
     con.close()
+    return True
 
 def getReceiptItems(rid):
     con = sqlite3.connect(DB_NAME)
