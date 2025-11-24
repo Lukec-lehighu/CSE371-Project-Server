@@ -428,31 +428,4 @@ def getDept(groupname, username):
     con.close()
     return debts
 
-# if not _table_exists('receipts', cur):
-#         cur.execute(f"""CREATE TABLE receipts(
-#                         rID INTEGER NOT NULL,
-#                         name varchar({MAX_GROUPNAME_LEN}),
-#                         groupname varchar({MAX_GROUPNAME_LEN}),
-#                         author varchar({MAX_USERNAME_LEN}),
-#                         PRIMARY KEY(rID),
-#                         FOREIGN KEY (groupname) REFERENCES groups(groupname) ON DELETE CASCADE
-#                         )""")
-#         print('Created table: receipts')
-# if not _table_exists('receipt_data', cur):
-#         cur.execute(f"""CREATE TABLE receipt_data(
-#                         rID int,
-#                         itemname varchar({MAX_RECEIPT_ITEM_LEN}) PRIMARY KEY,
-#                         cost REAL,
-#                         FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
-#                         )""")
-#         print('Created table: receipt_data')
-# if not _table_exists('claimed_items', cur):
-#         cur.execute(f"""CREATE TABLE claimed_items(
-#                         rID int,
-#                         itemname varchar({MAX_RECEIPT_ITEM_LEN}),
-#                         claimer varchar({MAX_USERNAME_LEN}),
-#                         FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
-#                         )""")
-#         print('Created table: claimed_items')
-
 setupTables()
