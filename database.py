@@ -355,6 +355,7 @@ def removeReceiptItem(rid, itemname):
     con.commit()
 
     con.close()
+    return True
 
 def getClaimedItems(rid):
     con = sqlite3.connect(DB_NAME)
