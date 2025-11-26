@@ -415,6 +415,8 @@ def getDept(groupname, username):
         author = cur.execute(f"SELECT author FROM receipts WHERE rID=?", (rid,)).fetchone()[0]
 
         for itemname in claimed_items[rid]:
+            itemname = itemname[0]
+            
             # get number of people who have also claimed same receipt items
             num_people_claimed = len(cur.execute(f"SELECT itemname FROM claimed_items WHERE rID=? AND itemname=?", (rid, itemname)).fetchall())
 
