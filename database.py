@@ -48,8 +48,9 @@ def setupTables():
     if not _table_exists('receipt_data', cur):
         cur.execute(f"""CREATE TABLE receipt_data(
                         rID int,
-                        itemname varchar({MAX_RECEIPT_ITEM_LEN}) PRIMARY KEY,
+                        itemname varchar({MAX_RECEIPT_ITEM_LEN}),
                         cost REAL,
+                        PRIMARY KEY (rID, itemname),
                         FOREIGN KEY (rID) REFERENCES receipts(rID) ON DELETE CASCADE
                         )""")
         print('Created table: receipt_data')
