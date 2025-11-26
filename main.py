@@ -5,7 +5,7 @@ import database
 import requests
 import json
 
-DEVRUN = True # whether or not I'm running the script for development or testing
+DEVRUN = False # whether or not I'm running the script for development or testing
 
 app = Flask(__name__)
 CORS(app)
