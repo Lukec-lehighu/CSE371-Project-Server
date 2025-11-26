@@ -423,8 +423,8 @@ def get_debt():
     '''
     Request structure:
         {
-            groupname,
-            username
+            token,
+            groupname
         }
     '''
 
