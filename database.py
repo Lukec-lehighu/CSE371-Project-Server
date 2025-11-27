@@ -81,6 +81,7 @@ def getGroups(username):
     cur = con.cursor()
     groups = cur.execute("SELECT groupname, owner FROM groups").fetchall()
     joined = cur.execute(f"SELECT groupname FROM group_members WHERE membername=?", (username,)).fetchall()
+    joined = [j[0] for j in joined] #flatten the array
 
     con.close()
 
