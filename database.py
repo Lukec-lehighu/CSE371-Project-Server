@@ -79,12 +79,12 @@ def getGroups(username):
     # get all of the groups that the user has access to 
     con = sqlite3.connect(DB_NAME)
     cur = con.cursor()
-    groups = cur.execute("SELECT groupname FROM groups").fetchall()
+    groups = cur.execute("SELECT groupname, owner FROM groups").fetchall()
     joined = cur.execute(f"SELECT groupname FROM group_members WHERE membername=?", (username,)).fetchall()
 
     con.close()
 
-    res = [[group, group in joined] for group in groups]
+    res = [[group[0], group[0] in joined, group[1]] for group in groups]
     return res
 
 def userIsOwnerOfGroup(groupname, username, cur=None):
@@ -423,7 +423,7 @@ def getDept(groupname, username):
             # take total cost and divide among claimers
             total_cost = cur.execute(f"SELECT cost FROM receipt_data WHERE rID=? AND itemname=?", (rid, itemname)).fetchone()[0]
             
-            cost = total_cost / num_people_claimed
+            cost = round(total_cost / num_people_claimed, 2)
 
             # add to total debt
             debts[author] = debts.get(author, 0) + cost
