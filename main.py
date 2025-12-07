@@ -16,7 +16,7 @@ def check_auth(token, displayname=False):
         res = requests.get(f'https://www.googleapis.com/oauth2/v1/userinfo?access_token={token}')
         response = json.loads(res.text)
 
-        return response.get('name')
+        return response.get('name', '')
     else:
         res = requests.get(f'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token={token}')
         response = json.loads(res.text)
